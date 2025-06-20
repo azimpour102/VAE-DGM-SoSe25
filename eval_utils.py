@@ -12,7 +12,7 @@ def plot_losses(train_losses, val_losses, data_flag):
     plt.savefig(data_flag + "_performance_analysis.png")
     plt.show()
 
-def reconstruct_images(num, model, dataset):
+def reconstruct_images(num, model, dataset, device):
     actual_images = []
     reconstructed_images = []
     for i in range(num):
@@ -25,7 +25,7 @@ def reconstruct_images(num, model, dataset):
 
     return actual_images, reconstructed_images
 
-def generate_images(num, model):
+def generate_images(num, model, device):
     images = []
     for i in range(num):
         z_sample = torch.randn(1, 128).to(device)

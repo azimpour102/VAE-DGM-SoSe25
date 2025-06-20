@@ -5,8 +5,9 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 
 class VAE(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super(VAE, self).__init__()
+        self.device = device
 
     def encode(self, x):
         x = self.encoder(x)
@@ -14,7 +15,7 @@ class VAE(nn.Module):
         return mean, log_var
 
     def reparameterization(self, mean, var):
-        epsilon = torch.randn_like(var).to(device)
+        epsilon = torch.randn_like(var).to(self.device)
         z = mean + var*epsilon
         return z
 
@@ -28,8 +29,8 @@ class VAE(nn.Module):
         return x_hat, mean, log_var
 
 class FullyConnectedVAE(VAE):
-    def __init__(self, input_dim=784, latent_dim=128, device=device):
-        super(FullyConnectedVAE, self).__init__()
+    def __init__(self, device, input_dim=784, latent_dim=128):
+        super(FullyConnectedVAE, self).__init__(device)
 
         # encoder
         self.encoder = nn.Sequential(

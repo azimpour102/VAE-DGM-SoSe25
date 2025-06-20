@@ -1,4 +1,11 @@
+import medmnist
 from medmnist import INFO, Evaluator
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.utils.data as data
+import torchvision.transforms as transforms
 
 def get_datasets(data_flag, batch_size=128, size=28, download=True):
     info = INFO[data_flag]
