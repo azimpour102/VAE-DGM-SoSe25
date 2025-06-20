@@ -2,6 +2,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
+from config import *
+
+def read_eval_config(device):
+    print("Loading the model ...")
+    checkpoint = {}
+    
+    model = MODEL(device)
+    model.load_state_dict(torch.load(SAVED_MODEL_PATH)['model_state_dict'])
+    model.eval()
+
+    return model
+
 def plot_losses(train_losses, val_losses, data_flag):
     plt.plot(train_losses)
     plt.plot(val_losses)
@@ -10,7 +22,7 @@ def plot_losses(train_losses, val_losses, data_flag):
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.savefig(data_flag + "_performance_analysis.png")
-    plt.show()
+    # plt.show()
 
 def reconstruct_images(num, model, dataset, device):
     actual_images = []
@@ -18,7 +30,7 @@ def reconstruct_images(num, model, dataset, device):
     for i in range(num):
         idx = np.random.randint(len(dataset))
         image, label = dataset[idx]
-        actual_images.append(image.detach().cpu().reshape(28, 28))
+        actual_images.append(image[0].detach().cpu().reshape(28, 28))
         input = image.view(-1, 784).to(device)
         output = model(input)[0][0]
         reconstructed_images.append(output.detach().cpu().reshape(28, 28))
@@ -51,4 +63,4 @@ def plot_images(images, saving_name):
         ax.set_yticks([])
 
     plt.savefig(saving_name)
-    plt.show()
+    # plt.show()

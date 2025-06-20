@@ -8,6 +8,7 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 
 def get_datasets(data_flag, batch_size=128, size=28, download=True):
+    print("Fetching dataset", data_flag, "...")
     info = INFO[data_flag]
     task = info['task']
     n_channels = info['n_channels']
@@ -23,6 +24,7 @@ def get_datasets(data_flag, batch_size=128, size=28, download=True):
     return train_dataset, test_dataset, val_dataset
 
 def get_dataloaders(train_dataset, test_dataset, val_dataset, batch_size=128):
+    print("Creating dataloaders ...")
     train_loader = data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
     test_loader = data.DataLoader(dataset=test_dataset, batch_size=2*batch_size, shuffle=False)
     val_loader = data.DataLoader(dataset=val_dataset, batch_size=2*batch_size, shuffle=False)
