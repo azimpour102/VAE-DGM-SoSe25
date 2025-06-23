@@ -16,6 +16,73 @@ from data_utils import *
 from eval_utils import *
 from train_utils import *
 
+
+
+def parse_args():
+    """Parse command-line arguments for training."""
+    parser = argparse.ArgumentParser(description="Training script for VAE.")
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="cuda",
+        required=True,
+        help="Device to use for training."
+    )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default="octmnist",
+        required=True,
+        help="Dataset to use for training."
+    )
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=128,
+        required=True,
+        help="Batch size for training."
+    )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=5,
+        required=True,
+        help="Number of epochs for training."
+    )
+    parser.add_argument(
+        "--learning_rate",
+        type=float,
+        default=0.001,
+        required=True,
+        help="Learning rate for training."
+    )
+    parser.add_argument(
+        "--model_name",
+        type=str,
+        default="FullyConnectedVAE",
+        required=True,
+        help="Model to use for training."
+    )
+    parser.add_argument(
+        "--model_path",
+        type=str,
+        default="FullyConnectedVAE",
+        required=True,
+        help="Model to use for training."
+    )
+    parser.add_argument(
+        "--load_model",
+        type=bool,
+        default=False,
+        required=True,
+        help="Load model from path."
+    )
+
+    return parser.parse_args()
+
+args = parse_args()
+
+
 for dataset in DATASETS:
     train_dataset, test_dataset, val_dataset = get_datasets(dataset, batch_size=BATCH_SIZE, size=28, download=True)
     train_loader, test_loader, val_loader = get_dataloaders(train_dataset, test_dataset, val_dataset, batch_size=BATCH_SIZE)

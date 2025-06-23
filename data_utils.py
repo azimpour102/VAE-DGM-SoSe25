@@ -7,6 +7,7 @@ import torch.optim as optim
 import torch.utils.data as data
 import torchvision.transforms as transforms
 
+
 def get_datasets(data_flag, batch_size=128, size=28, download=True):
     print("Fetching dataset", data_flag, "...")
     info = INFO[data_flag]
