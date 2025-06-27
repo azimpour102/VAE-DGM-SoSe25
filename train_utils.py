@@ -31,7 +31,6 @@ def read_config(device):
     
     return model, checkpoint
 
-# def train(model, train_dataset, val_dataset, train_loader, val_loader, optimizer, epochs, device):
 def train(model, train_datasets, val_datasets, checkpoint, epochs, device):
     train_dataset, train_loader = train_datasets
     val_dataset, val_loader = val_datasets
@@ -47,7 +46,8 @@ def train(model, train_datasets, val_datasets, checkpoint, epochs, device):
     for epoch in range(epochs):
         overall_train_loss = 0
         for batch_idx, (x, _) in enumerate(train_loader):
-            x = x.view(-1, 784).to(device)
+            # x = x.view(-1, 784).to(device)
+            x = x.to(device)
 
             optimizer.zero_grad()
 
@@ -61,7 +61,8 @@ def train(model, train_datasets, val_datasets, checkpoint, epochs, device):
 
         overall_val_loss = 0
         for batch_idx, (x, _) in enumerate(val_loader):
-            x = x.view(-1, 784).to(device)
+            # x = x.view(-1, 784).to(device)
+            x = x.to(device)
 
             x_hat, mean, log_var = model(x)
             loss = loss_function(x, x_hat, mean, log_var)

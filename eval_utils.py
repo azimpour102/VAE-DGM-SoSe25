@@ -1,6 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torch.nn.functional as F
+
+from torch.utils.data import DataLoader, Subset
+from torchmetrics.image.fid import FrechetInceptionDistance
+from torchmetrics.image.psnr import PeakSignalNoiseRatio
+from torchmetrics.image.ssim import StructuralSimilarityIndexMeasure
 
 from config import *
 
@@ -27,25 +33,21 @@ def plot_losses(train_losses, val_losses, data_flag):
 def reconstruct_images(num, model, dataset, device):
     actual_images = []
     reconstructed_images = []
-    for i in range(num):
-        idx = np.random.randint(len(dataset))
-        image, label = dataset[idx]
-        actual_images.append(image[0].detach().cpu().reshape(28, 28))
-        input = image.view(-1, 784).to(device)
-        output = model(input)[0][0]
-        reconstructed_images.append(output.detach().cpu().reshape(28, 28))
 
-    return actual_images, reconstructed_images
+    indices = np.random.choice(range(len(dataset)), num)
+    subset = Subset(dataset, indices)
+    loader = DataLoader(subset, batch_size=num, shuffle=False)
+    for actual_images, _ in loader:
+        actual_images = actual_images.to(device)
+        reconstructed_images = model(actual_images)[0]
+
+    return actual_images.detach().numpy(), reconstructed_images.detach().numpy()
 
 def generate_images(num, model, device):
-    images = []
-    for i in range(num):
-        z_sample = torch.randn(1, 128).to(device)
-        x_decoded = model.decode(z_sample)
-        image = x_decoded.detach().cpu().reshape(28, 28)
-        images.append(image)
-
-    return images
+    z_sample = torch.randn(num, 128).to(device)
+    x_decoded = model.decode(z_sample)
+    
+    return x_decoded.detach().numpy()
 
 def plot_images(images, saving_name):
     rows = len(images)
@@ -55,8 +57,7 @@ def plot_images(images, saving_name):
 
     for i in range(rows):
         for j in range(cols):
-            axes[i, j].matshow(images[i][j], cmap='gray')
-        # axes[1, j].matshow(actual_images[i], cmap='gray')
+            axes[i, j].imshow(images[i][j].T)
 
     for ax in axes.flat:
         ax.set_xticks([])
@@ -64,3 +65,37 @@ def plot_images(images, saving_name):
 
     plt.savefig(saving_name)
     # plt.show()
+
+def evaluate_model_metrics(model, dataloader, device='cuda'):
+    # Move model to device
+    model.to(device)
+    model.eval()
+
+    # Initialize metrics
+    fid = FrechetInceptionDistance(feature=2048, normalize=True).to(device)
+    psnr = PeakSignalNoiseRatio(data_range=1.0).to(device)
+    ssim = StructuralSimilarityIndexMeasure(data_range=1.0).to(device)
+
+    with torch.no_grad():
+        # for batch in dataloader:
+        for inputs, _ in dataloader:
+
+            inputs = inputs.to(device)
+            outputs = model(inputs)[0]
+
+            # Update metrics
+            psnr.update(outputs, inputs)
+            ssim.update(outputs, inputs)
+
+            # if inputs.shape[2] < 75 or inputs.shape[3] < 75:
+            #     inputs = F.interpolate(inputs, size=(75, 75), mode='bilinear', align_corners=False)
+            #     outputs = F.interpolate(outputs, size=(75, 75), mode='bilinear', align_corners=False)
+            # fid.update(inputs, real=True)
+            # fid.update(outputs, real=False)
+
+    # Compute final scores
+    return {
+        # 'FID': fid.compute().item(),
+        'PSNR': psnr.compute().item(),
+        'SSIM': ssim.compute().item()
+    }

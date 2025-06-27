@@ -5,18 +5,18 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 DATASETS = [
-    # 'bloodmnist',
-    'octmnist',
+    'bloodmnist',
+    # 'octmnist',
     # 'pathmnist',
     # 'chestmnist',
 ]
 
 LOAD_MODEL = True
-SAVED_MODEL_PATH = 'bloodmnistFullyConnectedVAE.pth'
+SAVED_MODEL_PATH = 'bloodmnistConvolutionalVAE.pth'
 
-MODEL = FullyConnectedVAE
-MODEL_NAME = 'FullyConnectedVAE'
+MODEL = ConvolutionalVAE
+MODEL_NAME = 'ConvolutionalVAE'
 
 BATCH_SIZE = 128
-TRAINING_EPOCHS = 5
+TRAINING_EPOCHS = 0
 LR = 0.0001

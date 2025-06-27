@@ -57,3 +57,63 @@ class FullyConnectedVAE(VAE):
             nn.Linear(800, input_dim),
             nn.Sigmoid()
             )
+
+class ConvolutionalVAE(VAE):
+    def __init__(self, device, latent_dim=128):
+        super(ConvolutionalVAE, self).__init__(device)
+
+        # Encoder: Input shape (3, 28, 28)
+        self.encoder = nn.Sequential(
+            nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1),   # (32, 28, 28)
+            nn.BatchNorm2d(32),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1),  # (64, 14, 14)
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1), # (128, 7, 7)
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1), # (256, 7, 7)
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(0.2)
+        )
+
+        self.flatten_dim = 256 * 7 * 7
+        self.mean_layer = nn.Linear(self.flatten_dim, latent_dim)
+        self.logvar_layer = nn.Linear(self.flatten_dim, latent_dim)
+
+        # Decoder
+        self.decoder_input = nn.Linear(latent_dim, self.flatten_dim)
+
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose2d(256, 128, kernel_size=3, stride=1, padding=1),  # (128, 7, 7)
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+
+            nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),   # (64, 14, 14)
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+
+            nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1),    # (32, 28, 28)
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+
+            nn.Conv2d(32, 3, kernel_size=3, padding=1),  # (3, 28, 28)
+            nn.Sigmoid()
+        )
+    
+    def encode(self, x):
+        x = self.encoder(x)
+        x = x.view(x.size(0), -1)
+        mean = self.mean_layer(x)
+        logvar = self.logvar_layer(x)
+        return mean, logvar
+
+    def decode(self, z):
+        x = self.decoder_input(z)
+        x = x.view(-1, 256, 7, 7)
+        x = self.decoder(x)
+        return x

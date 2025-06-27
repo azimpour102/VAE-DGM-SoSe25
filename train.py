@@ -109,3 +109,6 @@ for dataset in DATASETS:
 
     generated_images = generate_images(10, model, device)
     plot_images([generated_images[:5], generated_images[5:]], dataset + "_generation.png")
+
+    metrics = evaluate_model_metrics(model, test_loader, device)
+    print(metrics)
