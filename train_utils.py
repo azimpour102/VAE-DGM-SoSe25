@@ -17,7 +17,7 @@ def read_config(device):
     print("Loading / Initiaiting the model ...")
     checkpoint = {}
     
-    model = MODEL(device)
+    model = MODEL_TYPE(device)
     checkpoint['optimizer'] = optim.Adam(model.parameters(), lr=0.001)
     checkpoint['start_epoch'] = 0
     checkpoint['loss'] = loss_function
