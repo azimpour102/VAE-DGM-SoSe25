@@ -35,3 +35,4 @@ train_losses, val_losses = train(model, train_dataset, val_dataset, train_loader
 # optimizer.param_groups[0]['lr'] = 0.0005
 
 plot_losses(train_losses, val_losses, data_flag)
+print('done')
