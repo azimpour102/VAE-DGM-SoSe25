@@ -17,7 +17,37 @@ from eval_utils import *
 from train_utils import *
 from vae_base import *
 
+def parse_args():
+    """Parse command-line arguments for training."""
+    parser = argparse.ArgumentParser(description="Training script for VAE.")
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default="octmnist",
+        help="Dataset to use for training."
+    )
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=128,
+        help="Batch size for training."
+    )
+    parser.add_argument(
+        "--learning_rate",
+        type=float,
+        default=0.001,
+        help="Learning rate for training."
+    )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=5,
+        help="Number of epochs for training."
+    )
 
+    return parser.parse_args()
+
+args = parse_args()
 
 data_flag = args.dataset
 BATCH_SIZE = args.batch_size
@@ -30,7 +60,17 @@ train_loader, test_loader, val_loader = get_dataloaders(train_dataset, test_data
 model = FullyConnectedVAE(device).to(device)
 optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
-train_losses, val_losses = train(model, train_dataset, val_dataset, train_loader, val_loader, optimizer, 5, device)
+# Create checkpoint dictionary to match train function signature
+checkpoint = {
+    'optimizer': optimizer,
+    'start_epoch': 0,
+    'loss': None  # Will be set by train function
+}
+
+train_datasets = (train_dataset, train_loader)
+val_datasets = (val_dataset, val_loader)
+
+train_losses, val_losses = train(model, train_datasets, val_datasets, checkpoint, args.epochs, device)
 
 # optimizer.param_groups[0]['lr'] = 0.0005
 

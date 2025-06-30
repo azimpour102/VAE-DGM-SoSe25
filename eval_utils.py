@@ -4,9 +4,16 @@ import torch
 import torch.nn.functional as F
 
 from torch.utils.data import DataLoader, Subset
-from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.image.psnr import PeakSignalNoiseRatio
 from torchmetrics.image.ssim import StructuralSimilarityIndexMeasure
+
+# Try to import FID, but make it optional
+try:
+    from torchmetrics.image.fid import FrechetInceptionDistance
+    FID_AVAILABLE = True
+except ModuleNotFoundError:
+    print("Warning: FrechetInceptionDistance not available. Install with: pip install torchmetrics[image]")
+    FID_AVAILABLE = False
 
 from config import *
 
@@ -72,14 +79,16 @@ def evaluate_model_metrics(model, dataloader, device='cuda'):
     model.eval()
 
     # Initialize metrics
-    fid = FrechetInceptionDistance(feature=2048, normalize=True).to(device)
     psnr = PeakSignalNoiseRatio(data_range=1.0).to(device)
     ssim = StructuralSimilarityIndexMeasure(data_range=1.0).to(device)
+    
+    # Initialize FID only if available
+    fid = None
+    if FID_AVAILABLE:
+        fid = FrechetInceptionDistance(feature=2048, normalize=True).to(device)
 
     with torch.no_grad():
-        # for batch in dataloader:
         for inputs, _ in dataloader:
-
             inputs = inputs.to(device)
             outputs = model(inputs)[0]
 
@@ -87,15 +96,27 @@ def evaluate_model_metrics(model, dataloader, device='cuda'):
             psnr.update(outputs, inputs)
             ssim.update(outputs, inputs)
 
-            # if inputs.shape[2] < 75 or inputs.shape[3] < 75:
-            #     inputs = F.interpolate(inputs, size=(75, 75), mode='bilinear', align_corners=False)
-            #     outputs = F.interpolate(outputs, size=(75, 75), mode='bilinear', align_corners=False)
-            # fid.update(inputs, real=True)
-            # fid.update(outputs, real=False)
+            # Update FID if available
+            if fid is not None:
+                # Resize images for FID if needed
+                if inputs.shape[2] < 75 or inputs.shape[3] < 75:
+                    inputs_resized = F.interpolate(inputs, size=(75, 75), mode='bilinear', align_corners=False)
+                    outputs_resized = F.interpolate(outputs, size=(75, 75), mode='bilinear', align_corners=False)
+                else:
+                    inputs_resized = inputs
+                    outputs_resized = outputs
+                
+                fid.update(inputs_resized, real=True)
+                fid.update(outputs_resized, real=False)
 
     # Compute final scores
-    return {
-        # 'FID': fid.compute().item(),
+    metrics = {
         'PSNR': psnr.compute().item(),
         'SSIM': ssim.compute().item()
     }
+    
+    # Add FID if available
+    if fid is not None:
+        metrics['FID'] = fid.compute().item()
+    
+    return metrics
