@@ -17,15 +17,15 @@ except ModuleNotFoundError:
 
 from config import *
 
-def read_eval_config(device):
-    print("Loading the model ...")
-    checkpoint = {}
+# def read_eval_config(device):
+#     print("Loading the model ...")
+#     checkpoint = {}
     
-    model = MODEL(device)
-    model.load_state_dict(torch.load(SAVED_MODEL_PATH)['model_state_dict'])
-    model.eval()
+#     model = MODEL(device)
+#     model.load_state_dict(torch.load(SAVED_MODEL_PATH)['model_state_dict'])
+#     model.eval()
 
-    return model
+#     return model
 
 def plot_losses(train_losses, val_losses, data_flag):
     plt.plot(train_losses)
@@ -37,22 +37,32 @@ def plot_losses(train_losses, val_losses, data_flag):
     plt.savefig(data_flag + "_performance_analysis.png")
     # plt.show()
 
-def reconstruct_images(num, model, dataset, device):
+def reconstruct_images(num, model, dataset, device, label=-1):
     actual_images = []
     reconstructed_images = []
 
     indices = np.random.choice(range(len(dataset)), num)
     subset = Subset(dataset, indices)
     loader = DataLoader(subset, batch_size=num, shuffle=False)
-    for actual_images, _ in loader:
+    for actual_images, y in loader:
         actual_images = actual_images.to(device)
-        reconstructed_images = model(actual_images)[0]
+        y = y.to(device)
+        if label == -1:
+            reconstructed_images = model(actual_images)[0]
+        else:
+            c = torch.nn.functional.one_hot(y, num_classes=len(DATASET)).float().to(device)
+            reconstructed_images = model(actual_images, c)[0]
 
     return actual_images.detach().numpy(), reconstructed_images.detach().numpy()
 
-def generate_images(num, model, device):
+def generate_images(num, model, device, label=-1):
     z_sample = torch.randn(num, 128).to(device)
-    x_decoded = model.decode(z_sample)
+    if label == -1:
+        x_decoded = model.decode(z_sample)
+    else:
+        labels = torch.full((num,), label, dtype=torch.long).to(device)
+        c = torch.nn.functional.one_hot(labels, num_classes=len(DATASET)).float().to(device)
+        x_decoded = model.decode(z_sample, c)
     
     return x_decoded.detach().numpy()
 
@@ -88,9 +98,15 @@ def evaluate_model_metrics(model, dataloader, device='cuda'):
         fid = FrechetInceptionDistance(feature=2048, normalize=True).to(device)
 
     with torch.no_grad():
-        for inputs, _ in dataloader:
+        for inputs, y in dataloader:
             inputs = inputs.to(device)
-            outputs = model(inputs)[0]
+            y = y.to(device)
+            c = torch.nn.functional.one_hot(y, num_classes=len(DATASET)).float().to(device)
+
+            if len(DATASET) == 1:
+                outputs = model(inputs)[0]
+            else:
+                outputs = model(inputs, c)[0]
 
             # Update metrics
             psnr.update(outputs, inputs)

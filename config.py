@@ -63,7 +63,7 @@ def parse_args():
 
 args = parse_args()
 
-DATASET = args.dataset
+DATASET = (args.dataset).split(',')
 LOAD_MODEL = args.load_model
 SAVED_MODEL_PATH = args.model_path
 MODEL_NAME = args.model_name
@@ -71,6 +71,8 @@ if MODEL_NAME == 'FullyConnectedVAE':
     MODEL_TYPE = FullyConnectedVAE
 elif MODEL_NAME == 'ConvolutionalVAE':
     MODEL_TYPE = ConvolutionalVAE
+elif MODEL_NAME == 'ConditionalConvolutionalVAE':
+    MODEL_TYPE = ConditionalConvolutionalVAE
 BATCH_SIZE = args.batch_size 
 TRAINING_EPOCHS = args.epochs
 LR = args.learning_rate 

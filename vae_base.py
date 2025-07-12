@@ -117,3 +117,79 @@ class ConvolutionalVAE(VAE):
         x = x.view(-1, 256, 7, 7)
         x = self.decoder(x)
         return x
+
+class ConditionalConvolutionalVAE(VAE):
+    def __init__(self, device, latent_dim=128, num_classes=3):
+        super(ConditionalConvolutionalVAE, self).__init__(device)
+
+        # Encoder: Input shape (3, 28, 28)
+        self.num_classes = num_classes
+        self.label_embedding = nn.Linear(num_classes, 28 * 28)
+        self.encoder = nn.Sequential(
+            nn.Conv2d(4, 32, kernel_size=3, stride=1, padding=1),   # (32, 28, 28)
+            nn.BatchNorm2d(32),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1),  # (64, 14, 14)
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1), # (128, 7, 7)
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1), # (256, 7, 7)
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(0.2)
+        )
+
+        self.flatten_dim = 256 * 7 * 7
+        self.mean_layer = nn.Linear(self.flatten_dim, latent_dim)
+        self.logvar_layer = nn.Linear(self.flatten_dim, latent_dim)
+
+        # Decoder
+        self.decoder_input = nn.Linear(2 * latent_dim, self.flatten_dim)
+        self.decoder_condition = nn.Linear(num_classes, latent_dim)
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose2d(256, 128, kernel_size=3, stride=1, padding=1),  # (128, 7, 7)
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+
+            nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),   # (64, 14, 14)
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+
+            nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1),    # (32, 28, 28)
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+
+            nn.Conv2d(32, 3, kernel_size=3, padding=1),  # (3, 28, 28)
+            nn.Sigmoid()
+        )
+    
+    def encode(self, x, c):
+        c_embed = self.label_embedding(c).view(x.size(0), 1, 28, 28)
+        x = torch.cat([x, c_embed], dim=1)
+
+        x = self.encoder(x)
+        x = x.view(x.size(0), -1)
+        mean = self.mean_layer(x)
+        logvar = self.logvar_layer(x)
+
+        return mean, logvar
+    
+    def decode(self, z, c):
+        c_embed = self.decoder_condition(c.reshape(len(z), self.num_classes))
+        z = torch.cat([z, c_embed], dim=1)
+        # print(z.shape, c.shape, c_embed.shape)
+
+        x = self.decoder_input(z)
+        x = x.view(-1, 256, 7, 7)
+        x = self.decoder(x)
+        return x
+
+    def forward(self, x, c):
+        mean, log_var = self.encode(x, c)
+        z = self.reparameterization(mean, log_var)
+        x_hat = self.decode(z, c)
+        return x_hat, mean, log_var

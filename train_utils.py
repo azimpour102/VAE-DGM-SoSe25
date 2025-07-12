@@ -17,7 +17,10 @@ def read_config(device):
     print("Loading / Initiaiting the model ...")
     checkpoint = {}
     
-    model = MODEL_TYPE(device)
+    if len(DATASET) == 1:
+        model = MODEL_TYPE(device)
+    else:
+        model = MODEL_TYPE(device, num_classes=len(DATASET))
     checkpoint['optimizer'] = optim.Adam(model.parameters(), lr=0.001)
     checkpoint['start_epoch'] = 0
     checkpoint['loss'] = loss_function
@@ -45,13 +48,18 @@ def train(model, train_datasets, val_datasets, checkpoint, epochs, device):
     val_losses = []
     for epoch in range(epochs):
         overall_train_loss = 0
-        for batch_idx, (x, _) in enumerate(train_loader):
-            # x = x.view(-1, 784).to(device)
+        for batch_idx, (x, y) in enumerate(train_loader):
+            print("Training, batch Nr.", batch_idx)
             x = x.to(device)
+            y = y.to(device)
+            c = torch.nn.functional.one_hot(y, num_classes=len(DATASET)).float().to(device)
 
             optimizer.zero_grad()
 
-            x_hat, mean, log_var = model(x)
+            if len(DATASET) == 1:
+                x_hat, mean, log_var = model(x)
+            else:
+                x_hat, mean, log_var = model(x, c)
             loss = loss_function(x, x_hat, mean, log_var)
 
             overall_train_loss += loss.item()
@@ -60,11 +68,16 @@ def train(model, train_datasets, val_datasets, checkpoint, epochs, device):
             optimizer.step()
 
         overall_val_loss = 0
-        for batch_idx, (x, _) in enumerate(val_loader):
-            # x = x.view(-1, 784).to(device)
+        for batch_idx, (x, y) in enumerate(val_loader):
+            print("Validation, batch Nr.", batch_idx)
             x = x.to(device)
+            y = y.to(device)
+            c = torch.nn.functional.one_hot(y, num_classes=len(DATASET)).float().to(device)
 
-            x_hat, mean, log_var = model(x)
+            if len(DATASET) == 1:
+                x_hat, mean, log_var = model(x)
+            else:
+                x_hat, mean, log_var = model(x, c)
             loss = loss_function(x, x_hat, mean, log_var)
 
             overall_val_loss += loss.item()

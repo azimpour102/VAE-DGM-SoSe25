@@ -8,19 +8,24 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 
 
-def get_datasets(data_flag, batch_size=128, size=28, download=True):
+def get_dataset(data_flag, batch_size=128, size=28, download=True, label=0):
     print("Fetching dataset", data_flag, "...")
     info = INFO[data_flag]
     task = info['task']
     n_channels = info['n_channels']
+    print(n_channels)
     n_classes = len(info['label'])
 
     DataClass = getattr(medmnist, info['python_class'])
     data_transform = transforms.Compose([transforms.ToTensor()])
 
     train_dataset = DataClass(split='train', transform=data_transform, size=size, download=download)
-    val_dataset = DataClass(split='val', transform=data_transform, size=size, download=download)
     test_dataset = DataClass(split='test', transform=data_transform, size=size, download=download)
+    val_dataset = DataClass(split='val', transform=data_transform, size=size, download=download)
+    
+    train_dataset.labels[:] = label
+    test_dataset.labels[:] = label
+    val_dataset.labels[:] = label
 
     return train_dataset, test_dataset, val_dataset
 
@@ -31,3 +36,20 @@ def get_dataloaders(train_dataset, test_dataset, val_dataset, batch_size=128):
     val_loader = data.DataLoader(dataset=val_dataset, batch_size=2*batch_size, shuffle=False)
 
     return train_loader, test_loader, val_loader
+
+def get_datasets(datasets, labels, batch_size=128, size=28, download=True):
+    train_datasets = []
+    test_datasets = []
+    val_datasets = []
+
+    for i in range(len(datasets)):
+        all_datasets = get_dataset(datasets[i], batch_size, size, download, labels[i])
+        train_datasets.append(all_datasets[0])
+        test_datasets.append(all_datasets[1])
+        val_datasets.append(all_datasets[2])
+    
+    train_dataset = data.ConcatDataset(train_datasets)
+    test_dataset = data.ConcatDataset(test_datasets)
+    val_dataset = data.ConcatDataset(val_datasets)
+
+    return train_dataset, test_dataset, val_dataset
