@@ -67,12 +67,25 @@ DATASET = (args.dataset).split(',')
 LOAD_MODEL = args.load_model
 SAVED_MODEL_PATH = args.model_path
 MODEL_NAME = args.model_name
-if MODEL_NAME == 'FullyConnectedVAE':
-    MODEL_TYPE = FullyConnectedVAE
-elif MODEL_NAME == 'ConvolutionalVAE':
-    MODEL_TYPE = ConvolutionalVAE
-elif MODEL_NAME == 'ConditionalConvolutionalVAE':
-    MODEL_TYPE = ConditionalConvolutionalVAE
+
+# Enhanced model mappings with backwards compatibility
+if MODEL_NAME == 'FullyConnectedVAE' or MODEL_NAME == 'ImprovedFullyConnectedVAE':
+    MODEL_TYPE = ImprovedFullyConnectedVAE
+elif MODEL_NAME == 'ConvolutionalVAE' or MODEL_NAME == 'ImprovedConvolutionalVAE':
+    MODEL_TYPE = ImprovedConvolutionalVAE
+elif MODEL_NAME == 'ConditionalConvolutionalVAE' or MODEL_NAME == 'ImprovedConditionalConvolutionalVAE':
+    MODEL_TYPE = ImprovedConditionalConvolutionalVAE
+else:
+    # Fallback error message
+    available_models = [
+        'FullyConnectedVAE', 'ImprovedFullyConnectedVAE',
+        'ConvolutionalVAE', 'ImprovedConvolutionalVAE', 
+        'ConditionalConvolutionalVAE', 'ImprovedConditionalConvolutionalVAE'
+    ]
+    raise ValueError(f"Unknown model name: {MODEL_NAME}. Available models: {available_models}")
+
 BATCH_SIZE = args.batch_size 
 TRAINING_EPOCHS = args.epochs
 LR = args.learning_rate 
+
+print(f"Selected model: {MODEL_NAME} -> {MODEL_TYPE.__name__}") 
